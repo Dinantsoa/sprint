@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 :: Déclaration des variables
-set "WORK_DIR=C:\Users\viotech\Documents\GitHub\PremierProjet"
+set "WORK_DIR=C:\Users\viotech\Documents\GitHub\sprint"
 set "SRC_DIR=%WORK_DIR%\framework"
 set "LIB_DIR=%WORK_DIR%\lib"
 
