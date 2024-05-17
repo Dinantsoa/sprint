@@ -1,40 +1,88 @@
 package mg.itu.prom16;
 
-import java.io.IOException;
+import java.io.File;
 import java.io.PrintWriter;
-
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
+import java.lang.reflect.*;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import framework.*;
+
 // FontController
-
 public class FontController extends HttpServlet {
-    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        PrintWriter out = res.getWriter();
+    private boolean test = false;
+    List<String> valiny;
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) {
         try {
-            procesRequest(req, res);
+            processRequest(request, response);
+
         } catch (Exception e) {
-            // TODO: handle exception
-            out.println(e.getMessage());
+            System.out.println(e);
         }
     }
 
-    public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        PrintWriter out = res.getWriter();
+    public void doPost(HttpServletRequest request, HttpServletResponse response) {
         try {
-            procesRequest(req, res);
+            processRequest(request, response);
+
         } catch (Exception e) {
-            // TODO: handle exception
-            out.println(e.getMessage());
+            System.out.println(e);
+        }
+
+    }
+
+    public void processRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+        PrintWriter out = response.getWriter();
+        ServletContext context = getServletContext();
+        String chemin = context.getInitParameter("chemin");
+        if (!test) {
+            valiny = scan(chemin);
+            // out.println("scan reussie");
+        }
+        for (String string : valiny) {
+            out.println(string);
         }
     }
 
-    public void procesRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        PrintWriter out = res.getWriter();
-        res.setContentType("text/html;charset=UTF-8");
+    public List<String> scan(String chemin) throws Exception {
+        List<String> liste = new ArrayList<String>();
+        // liste.add(chemin);
         try {
-            out.println("<h3> the request" + req.getContextPath() + "</h3>");
+            String cheminRepertoire = chemin.replace('.', '/');
+            URL urPackage = Thread.currentThread().getContextClassLoader().getResource(cheminRepertoire);
+            if (urPackage != null) {
+                File directory = new File(urPackage.getFile());
+                File[] fichiers = directory.listFiles();
+                if (fichiers != null) {
+                    for (File fichier : fichiers) {
+                        if (fichier.isFile() && fichier.getName().endsWith(".class")) {
+                            String nomClasse = fichier.getName().substring(0, fichier.getName().length() - 6);
+                            String nomCompletClasse = chemin + "." + nomClasse;
+                            Class class1 = Class.forName(nomCompletClasse);
+                            if (class1.isAnnotationPresent(Annote.class)) {
+                                Annote annotation = (Annote) class1.getAnnotation(Annote.class);
+                                if (annotation.value().equalsIgnoreCase("Controlleur")) {
+                                    // liste.add(nomClasse + ".class");
+                                    liste.add(nomClasse);
+                                }
+                            }
+                        } else if (fichier.isDirectory()) {
+                            List<String> li = scan(cheminRepertoire + "." + fichier.getName());
+                            liste.addAll(li);
+                        }
+                    }
+                }
+            }
+            test = true;
+
         } catch (Exception e) {
-            out.println(e.getMessage());
+            throw e;
         }
+        return liste;
     }
+
 }
