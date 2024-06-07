@@ -1,9 +1,9 @@
-package mg.itu.prom16;
+package framework;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
 public @interface GET {
-    String value();
+    String value() default "";
 }

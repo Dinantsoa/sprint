@@ -47,7 +47,6 @@ public class FontController extends HttpServlet {
     public void doGet(HttpServletRequest request, HttpServletResponse response) {
         try {
             processRequest(request, response);
-
         } catch (Exception e) {
             System.out.println(e);
         }
@@ -70,6 +69,7 @@ public class FontController extends HttpServlet {
         try {
             String requestUrl = request.getRequestURI();// maka an'ilay url
             requestUrl = requestUrl.substring(requestUrl.lastIndexOf('/') + 1);
+
             out.println("<html>");
             out.println("<head><title>URL Mapping</title></head>");
             out.println("<body>");
@@ -94,6 +94,7 @@ public class FontController extends HttpServlet {
                 }
 
             } else {
+
                 out.println("<h1>No Methode sur : " + requestUrl + "</h1>");
             }
             out.println("</body>");
@@ -142,13 +143,13 @@ public class FontController extends HttpServlet {
     }
 
     public List<Method> getMethode(Class<?> test) {
+
         List<Method> liste = new ArrayList<Method>();
         Method[] methodes = test.getDeclaredMethods();
         for (Method method : methodes) {
             if (method.isAnnotationPresent(GET.class)) {
                 GET getannotation = method.getAnnotation(GET.class);
                 liste.add(method);
-
             }
         }
         return liste;
