@@ -40,6 +40,7 @@ public class FontController extends HttpServlet {
                         throw e;
                     }
                     noms.add(nom);
+
                     zeanotte.put(nom, new Mapping(controlleurs.get(i).getSimpleName(), methode.getName(),
                             controlleurs.get(i), methode));
                     isa++;
@@ -73,8 +74,7 @@ public class FontController extends HttpServlet {
         PrintWriter out = response.getWriter();
         ServletContext context = getServletContext();
         String chemin = context.getInitParameter("chemin");
-
-        String requestUrl = request.getRequestURI();// maka an'ilay url
+        String requestUrl = request.getRequestURI();
         requestUrl = requestUrl.substring(requestUrl.lastIndexOf('/') + 1);
         out.println("<html>");
         out.println("<head><title>URL Mapping</title></head>");
@@ -161,7 +161,6 @@ public class FontController extends HttpServlet {
             if (method.isAnnotationPresent(GET.class)) {
                 GET getannotation = method.getAnnotation(GET.class);
                 liste.add(method);
-
             }
         }
         return liste;
