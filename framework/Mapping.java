@@ -24,6 +24,14 @@ public class Mapping {
         return this.methodName;
     }
 
+    public Method getMethod() {
+        return this.methode;
+    }
+
+    public Class getClasse() {
+        return this.classe;
+    }
+
     public String retour() {
         String valiny = "";
         try {

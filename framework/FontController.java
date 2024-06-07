@@ -19,9 +19,9 @@ import framework.*;
 public class FontController extends HttpServlet {
     // private boolean test = false;
     List<String> valiny;
-    private Map<String, Mapping> zeanotte;
+    private HashMap<String, Mapping> zeanotte;
 
-    public void init(String Annotemethode) throws ServletException {
+    public void init() throws ServletException {
         ServletContext context = getServletContext();
         String chemin = context.getInitParameter("chemin");
         zeanotte = new HashMap<>();
@@ -29,11 +29,12 @@ public class FontController extends HttpServlet {
             List<Class> controlleurs = scan(chemin);
             int isa = 1;
             for (int i = 0; i < controlleurs.size(); i++) {
-                List<Method> methodes = getMethode(controlleurs.get(i), Annotemethode);
+                List<Method> methodes = getMethode(controlleurs.get(i));
                 for (Method methode : methodes) {
-                    zeanotte.put(isa + " " + Annotemethode,
-                            new Mapping(controlleurs.get(i).getSimpleName(),
-                                    methode.getName(), controlleurs.get(i), methode));
+                    GET anotte = methode.getAnnotation(GET.class);
+                    String nom = anotte.value();
+                    zeanotte.put(nom, new Mapping(controlleurs.get(i).getSimpleName(), methode.getName(),
+                            controlleurs.get(i), methode));
                     isa++;
                 }
             }
@@ -46,7 +47,6 @@ public class FontController extends HttpServlet {
     public void doGet(HttpServletRequest request, HttpServletResponse response) {
         try {
             processRequest(request, response);
-
         } catch (Exception e) {
             System.out.println(e);
         }
@@ -69,35 +69,38 @@ public class FontController extends HttpServlet {
         try {
             String requestUrl = request.getRequestURI();// maka an'ilay url
             requestUrl = requestUrl.substring(requestUrl.lastIndexOf('/') + 1);
-            try {
 
-            } catch (Exception e) {
-                // TODO: handle exception
-            }
-            init(requestUrl);
             out.println("<html>");
             out.println("<head><title>URL Mapping</title></head>");
             out.println("<body>");
             Mapping mapping = null;
-            // requestUrl = "andrana";
-            for (Map.Entry<String, Mapping> ENTRY : zeanotte.entrySet()) {
-                // out.println(zeanotte.size());
-                String Annotemethode = ENTRY.getKey();
-                mapping = zeanotte.get(Annotemethode);
-                out.println("<h2>Class: " + mapping.getClassName() + "</h2>");
-                out.println("<p> Le methode " + mapping.getMethodName() + " retourne " + mapping.retour() + "</p>");
-                // out.println("<h1>URL: " + requestUrl + "</h1>");
-                // out.println("<p>Class: " + mapping.getClassName() + "</p>");
-                // out.println(requestUrl);
-                // out.println("<p>Method: " + mapping.getMethodName() + "</p>");
+            mapping = zeanotte.get(requestUrl);
+            if (mapping != null) {
+                Method method = mapping.getMethod();
+                Class classe = mapping.getClasse();
+                Object objet = classe.getDeclaredConstructor().newInstance();
+                Object retourMethod = method.invoke(objet);
+                if (retourMethod instanceof String) {
+                    out.println("<h2>Class: " + mapping.getClassName() + "</h2>");
+                    out.println("<p> Le methode " + mapping.getMethodName() + " retourne " + mapping.retour() + "</p>");
+                } else if (retourMethod instanceof ModelView) {
+                    ModelView modelView = (ModelView) retourMethod;
+                    String url = modelView.getUrl();
+                    HashMap<String, Object> data = modelView.geData();
+                    for (Map.Entry<String, Object> entry : data.entrySet()) {
+                        request.setAttribute(entry.getKey(), entry.getValue());
+                    }
+                    request.getRequestDispatcher(url).forward(request, response);
+                }
 
-            }
+            } else {
 
-            if (mapping == null) {
                 out.println("<h1>No Methode sur : " + requestUrl + "</h1>");
             }
             out.println("</body>");
             out.println("</html>");
+        } catch (Exception e) {
+            out.println("Erreur eto" + e.getMessage());
         } finally {
             out.close();
         }
@@ -139,15 +142,14 @@ public class FontController extends HttpServlet {
         return liste;
     }
 
-    public List<Method> getMethode(Class<?> test, String Annotemethode) {
+    public List<Method> getMethode(Class<?> test) {
+
         List<Method> liste = new ArrayList<Method>();
         Method[] methodes = test.getDeclaredMethods();
         for (Method method : methodes) {
             if (method.isAnnotationPresent(GET.class)) {
                 GET getannotation = method.getAnnotation(GET.class);
-                if (getannotation.value().equals(Annotemethode)) {
-                    liste.add(method);
-                }
+                liste.add(method);
             }
         }
         return liste;
