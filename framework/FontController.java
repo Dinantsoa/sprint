@@ -82,10 +82,7 @@ public class FontController extends HttpServlet {
         Mapping mapping = null;
         mapping = zeanotte.get(requestUrl);
         if (mapping != null) {
-            Method method = mapping.getMethod();
-            Class classe = mapping.getClasse();
-            Object objet = classe.getDeclaredConstructor().newInstance();
-            Object retourMethod = method.invoke(objet);
+            Object retourMethod = mapping.getReponse(request);
             if (retourMethod instanceof String) {
                 out.println("<h2>Class: " + mapping.getClassName() + "</h2>");
                 out.println("<p> Le methode " + mapping.getMethodName() + " retourne " + mapping.retour() + "</p>");
