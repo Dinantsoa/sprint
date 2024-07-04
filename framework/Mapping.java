@@ -4,6 +4,7 @@ import java.util.Enumeration;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.*;
 
 public class Mapping {
@@ -131,6 +132,9 @@ public class Mapping {
 
                     // For simplicity, assume all parameters are of type String
                     args[i] = mamadikaObject(parameters[i].getType(), paramValue);
+                } else {
+                    ServletException e = new ServletException("ETU 2759 Exception misy tsy annote");
+                    throw e;
                 }
             } else {
                 ArrayList<String> listeParametre = makaParametre(request);
@@ -138,7 +142,9 @@ public class Mapping {
                 if (parameters[i].isAnnotationPresent(Param.class)) {
                     Param param = parameters[i].getAnnotation(Param.class);
                     nomParametre = param.value();
-
+                } else {
+                    ServletException e = new ServletException("ETU 2759 exception misy tsy annote");
+                    throw e;
                 }
                 Class cl = parameters[i].getType();
                 // Employer e=new Employer();
