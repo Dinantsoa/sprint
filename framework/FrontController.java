@@ -81,7 +81,6 @@ public class FrontController extends HttpServlet {
             out.println("<head><title>URL Mapping</title></head>");
             out.println("<body>");
             Mapping mapping = null;
-            // requestUrl = "andrana";
             mapping = zeanotte.get(requestUrl);
 
             if (mapping != null) {
@@ -171,7 +170,6 @@ public class FrontController extends HttpServlet {
         for (Method method : methodes) {
             if (method.isAnnotationPresent(Get.class)) {
                 liste.add(method);
-
             }
         }
         return liste;
