@@ -44,6 +44,7 @@ public class Mapping {
             valiny = this.methode.invoke(instance).toString();
         } catch (Exception e) {
             valiny = "Tsy mety";
+            throw e;
         }
         return valiny;
     }
@@ -166,6 +167,7 @@ public class Mapping {
                     }
                 }
                 args[i] = object;
+              
 
             }
         }
@@ -175,14 +177,16 @@ public class Mapping {
 
     }
 
+
     public void checkSession(Object controlleur, HttpSession session) throws Exception {
         Field[] attributes = controlleur.getClass().getDeclaredFields();
         for (int i = 0; i < attributes.length; i++) {
             if (attributes[i].getType().getName().equals(MySession.class.getName())) {
-                
+
                 attributes[i].setAccessible(true);
                 attributes[i].set(controlleur, new MySession(session));
             }
         }
     }
+
 }
