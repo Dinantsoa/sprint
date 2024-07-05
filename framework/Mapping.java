@@ -72,7 +72,6 @@ public class Mapping {
         while (parameterNames.hasMoreElements()) {
             String name = parameterNames.nextElement();
             valiny.add(name);
-
         }
         return valiny;
     }
@@ -89,7 +88,7 @@ public class Mapping {
             // Gestion d'autres types par défaut ici si nécessaire
         }
         try {
-            if (clazz == String.class) {
+            if (clazz.equals(String.class)) {
                 return value;
             } else if (clazz == int.class || clazz == Integer.class) {
                 return Integer.parseInt(value);
@@ -137,6 +136,10 @@ public class Mapping {
                     ServletException e = new ServletException("ETU 2759 Exception misy tsy annote");
                     throw e;
                 }
+            } else if (parameters[i].getType().getName().equals(MySession.class.getName())) {
+                HttpSession session = request.getSession();
+                MySession mysession = new MySession(session);
+                args[i] = mysession;
             } else {
                 ArrayList<String> listeParametre = makaParametre(request);
                 String nomParametre = parameters[i].getName();
@@ -148,7 +151,6 @@ public class Mapping {
                     throw e;
                 }
                 Class cl = parameters[i].getType();
-                // Employer e=new Employer();
                 Object object = cl.getConstructor().newInstance();
                 Object p[] = new Object[1];
 
@@ -165,15 +167,17 @@ public class Mapping {
                     }
                 }
                 args[i] = object;
+              
 
             }
         }
-        return methode.invoke(classe.getDeclaredConstructor().newInstance(), args);
+        Object instanceControlleur = classe.getDeclaredConstructor().newInstance();
+        checkSession(instanceControlleur, request.getSession());
+        return methode.invoke(instanceControlleur, args);
 
     }
 
-<<<<<<< Updated upstream
-=======
+
     public void checkSession(Object controlleur, HttpSession session) throws Exception {
         Field[] attributes = controlleur.getClass().getDeclaredFields();
         for (int i = 0; i < attributes.length; i++) {
@@ -184,5 +188,5 @@ public class Mapping {
             }
         }
     }
->>>>>>> Stashed changes
+
 }
