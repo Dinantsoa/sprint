@@ -4,8 +4,9 @@ import java.util.Enumeration;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.*;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.*;
 
 public class Mapping {
     private String className;
@@ -44,7 +45,6 @@ public class Mapping {
             valiny = this.methode.invoke(instance).toString();
         } catch (Exception e) {
             valiny = "Tsy mety";
-            throw e;
         }
         return valiny;
     }
@@ -177,16 +177,22 @@ public class Mapping {
 
     }
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
     public void checkSession(Object controlleur, HttpSession session) throws Exception {
         Field[] attributes = controlleur.getClass().getDeclaredFields();
         for (int i = 0; i < attributes.length; i++) {
             if (attributes[i].getType().getName().equals(MySession.class.getName())) {
-
+                
                 attributes[i].setAccessible(true);
                 attributes[i].set(controlleur, new MySession(session));
             }
         }
     }
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 }

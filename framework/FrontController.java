@@ -2,8 +2,8 @@ package mg.itu.prom16;
 
 import java.io.File;
 import java.io.PrintWriter;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
 
 import java.lang.reflect.*;
 import java.net.URL;
@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.google.gson.Gson;
 
 import framework.*;
 
@@ -76,10 +78,6 @@ public class FrontController extends HttpServlet {
         try {
             String requestUrl = request.getRequestURI();// maka an'ilay url
             requestUrl = requestUrl.substring(requestUrl.lastIndexOf('/') + 1);
-
-            out.println("<html>");
-            out.println("<head><title>URL Mapping</title></head>");
-            out.println("<body>");
             Mapping mapping = null;
             mapping = zeanotte.get(requestUrl);
 
@@ -88,31 +86,45 @@ public class FrontController extends HttpServlet {
                 Class classe = mapping.getClasse();
                 Object instance = classe.getDeclaredConstructor().newInstance();
                 Object valiny = mapping.getReponse(request);
-                if (valiny instanceof String) {
-                    out.println("<h1>URL: " + requestUrl + "</h1>");
-                    out.println("<p>Class: " + mapping.getClassName() + "</p>");
-                    out.println("<p>Retour: " + mapping.retour() + "</p>");
-                    out.println("<p>Method: " + mapping.getMethodName() + "</p>");
-                } else if (valiny instanceof ModelView) {
-                    ModelView modelView = (ModelView) valiny;
-                    String url = modelView.getUrl();
-                    HashMap<String, Object> data = modelView.getData();
-                    for (Map.Entry<String, Object> entry : data.entrySet()) {
-                        request.setAttribute(entry.getKey(), entry.getValue());
+                if (method.isAnnotationPresent(RestAPI.class)) {
+                    response.setContentType("application/json");
+                    Gson gson=new Gson();
+                    String val="";
+                    if (valiny instanceof ModelView) {
+                        ModelView modelView = (ModelView) valiny;
+                        String url = modelView.getUrl();
+                        HashMap<String, Object> data = modelView.getData();
+                        val=gson.toJson(data);
+                    }else{
+                        val=gson.toJson(valiny);
 
                     }
-                    request.getRequestDispatcher(url).forward(request, response);
-
-                } else {
-                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Non reconnue.");
-
+                    out.println(val);
                 }
-
+                else{
+                    if (valiny instanceof String) {
+                        out.println("<h1>URL: " + requestUrl + "</h1>");
+                        out.println("<p>Class: " + mapping.getClassName() + "</p>");
+                        out.println("<p>Retour: " + mapping.retour() + "</p>");
+                        out.println("<p>Method: " + mapping.getMethodName() + "</p>");
+                    } else if (valiny instanceof ModelView) {
+                        ModelView modelView = (ModelView) valiny;
+                        String url = modelView.getUrl();
+                        HashMap<String, Object> data = modelView.getData();
+                        for (Map.Entry<String, Object> entry : data.entrySet()) {
+                            request.setAttribute(entry.getKey(), entry.getValue());
+    
+                        }
+                        request.getRequestDispatcher(url).forward(request, response);
+    
+                    } else {
+                        response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Non reconnue.");
+    
+                    }
+                } 
             } else {
                 out.println("<h1>No Methode sur : " + requestUrl + "</h1>");
             }
-            out.println("</body>");
-            out.println("</html>");
         } catch (Exception e) {
             out.println(e.getMessage());
         } finally {
