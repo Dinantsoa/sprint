@@ -12,7 +12,7 @@ public class Mapping {
     private String className;
     private String methodName;
     private Class classe;
-
+    private String verb;
     public Class getClasse() {
         return classe;
     }
@@ -23,11 +23,12 @@ public class Mapping {
 
     private Method methode;
 
-    public Mapping(String className, String methodName, Class classe, Method method) {
+    public Mapping(String className, String methodName, Class classe, Method method,String verb) {
         this.className = className;
         this.methodName = methodName;
         this.methode = method;
         this.classe = classe;
+        this.verb = verb;
     }
 
     public String getClassName() {
@@ -120,7 +121,10 @@ public class Mapping {
     public Object getReponse(HttpServletRequest request) throws Exception {
         Parameter[] parameters = methode.getParameters();
         Object[] args = new Object[parameters.length];
-
+        String typeMethode=request.getMethod();
+        if(!this.verb.equalsIgnoreCase(typeMethode)){
+            throw new Exception("Erreur lors du type methode different" +" "+ typeMethode + " "+ this.verb );
+        }
         for (int i = 0; i < parameters.length; i++) {
 
             if (isPrimitiveOrString(parameters[i].getType())) {
@@ -167,7 +171,6 @@ public class Mapping {
                     }
                 }
                 args[i] = object;
-              
 
             }
         }
@@ -177,10 +180,6 @@ public class Mapping {
 
     }
 
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
     public void checkSession(Object controlleur, HttpSession session) throws Exception {
         Field[] attributes = controlleur.getClass().getDeclaredFields();
         for (int i = 0; i < attributes.length; i++) {
@@ -191,8 +190,4 @@ public class Mapping {
             }
         }
     }
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
 }

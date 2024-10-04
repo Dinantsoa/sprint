@@ -25,6 +25,7 @@ public class FrontController extends HttpServlet {
         ServletContext context = getServletContext();
         String chemin = context.getInitParameter("chemin");
         zeanotte = new HashMap<>();
+        String verb="GET";
         try {
             List<Class> controlleurs = scan(chemin);
             int isa = 1;
@@ -33,18 +34,22 @@ public class FrontController extends HttpServlet {
             for (int i = 0; i < controlleurs.size(); i++) {
                 List<Method> methodes = getMethode(controlleurs.get(i));
                 for (Method method : methodes) {
-                    Get getannotation = method.getAnnotation(Get.class);
+                    Url getannotation = method.getAnnotation(Url.class);
                     String nom = getannotation.value();
                     if (listeNom.contains(nom)) {
                         Exception e = new Exception("Efa niverina ny " + nom);
                         throw e;
                     }
+                    if(method.isAnnotationPresent(Post.class)){
+                        verb="POST";
+                    }
                     listeNom.add(nom);
                     zeanotte.put(nom,
                             new Mapping(controlleurs.get(i).getSimpleName(),
-                                    method.getName(), controlleurs.get(i), method));
+                                    method.getName(), controlleurs.get(i), method,verb));
                     isa++;
                 }
+
             }
         } catch (Exception w) {
             throw new ServletException("Erreur lors de l'initialisation du FrontController", w);
@@ -126,7 +131,7 @@ public class FrontController extends HttpServlet {
                 out.println("<h1>No Methode sur : " + requestUrl + "</h1>");
             }
         } catch (Exception e) {
-            out.println(e.getMessage());
+            response.sendError(405,e.getMessage());
         } finally {
             out.close();
         }
@@ -180,7 +185,7 @@ public class FrontController extends HttpServlet {
         List<Method> liste = new ArrayList<Method>();
         Method[] methodes = test.getDeclaredMethods();
         for (Method method : methodes) {
-            if (method.isAnnotationPresent(Get.class)) {
+            if (method.isAnnotationPresent(Url.class)) {
                 liste.add(method);
             }
         }
