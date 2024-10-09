@@ -27,12 +27,12 @@ public class FrontController extends HttpServlet {
         zeanotte = new HashMap<>();
         try {
             List<Class> controlleurs = scan(chemin);
-            int isa = 1;
-            List<String> listeNom = new ArrayList<>();
+            List<VerbAction> verbaction=new ArrayList<>(); 
 
-            for (int i = 0; i < controlleurs.size(); i++) {
+            for (int i = 0; i < controlleurs.size(); i++) { 
                 List<Method> methodes = getMethode(controlleurs.get(i));
                 for (Method method : methodes) {
+<<<<<<< Updated upstream
                     Get getannotation = method.getAnnotation(Get.class);
                     String nom = getannotation.value();
                     if (listeNom.contains(nom)) {
@@ -44,6 +44,18 @@ public class FrontController extends HttpServlet {
                             new Mapping(controlleurs.get(i).getSimpleName(),
                                     method.getName(), controlleurs.get(i), method));
                     isa++;
+=======
+                    String verb = "GET";
+                    Url getannotation = method.getAnnotation(Url.class);
+                    String nom = getannotation.value();
+                    if(method.isAnnotationPresent(Post.class)){
+                        verb="POST";
+                    }
+                    verbaction=getMethodeMemeNom(controlleurs.get(i), nom);
+                    zeanotte.put(nom,
+                            new Mapping(controlleurs.get(i).getSimpleName(),
+                                    method.getName(), controlleurs.get(i), verbaction));
+>>>>>>> Stashed changes
                 }
             }
         } catch (Exception w) {
@@ -82,7 +94,7 @@ public class FrontController extends HttpServlet {
             mapping = zeanotte.get(requestUrl);
 
             if (mapping != null) {
-                Method method = mapping.getMethode();
+                Method method = mapping.getMethode(request,response);
                 Class classe = mapping.getClasse();
                 Object instance = classe.getDeclaredConstructor().newInstance();
                 Object valiny = mapping.getReponse(request);
@@ -186,5 +198,27 @@ public class FrontController extends HttpServlet {
         }
         return liste;
     }
-
+    List<VerbAction> getMethodeMemeNom(Class <?> nomClass,String nomMethode) throws Exception{
+        List<VerbAction> retour=new ArrayList<>();
+        List<Method> methodes=getMethode(nomClass);
+        List<String> listeNom = new ArrayList<>();
+        for(Method methode : methodes){
+            String verb="GET";
+            Url url = methode.getAnnotation(Url.class);
+            String nomUrl=url.value(); 
+            if (nomUrl.equalsIgnoreCase(nomMethode)) {
+                if (methode.isAnnotationPresent(Post.class)) {
+                    verb="POST";   
+                }
+                String concateNomVerb=nomUrl+verb;
+                if (listeNom.contains(concateNomVerb)) {
+                    Exception e=new Exception("Methode "+nomUrl+ " double");
+                }
+                listeNom.add(concateNomVerb);
+                VerbAction verbAction=new VerbAction(verb,methode);
+                retour.add(verbAction);
+            }
+        }
+        return retour;
+    }
 }
