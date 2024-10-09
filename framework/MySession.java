@@ -1,10 +1,6 @@
 package framework;
 
-<<<<<<< Updated upstream
-import jakarta.servlet.http.HttpSession;
-=======
 import javax.servlet.http.HttpSession;
->>>>>>> Stashed changes
 
 public class MySession {
     private HttpSession session;

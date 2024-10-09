@@ -13,33 +13,15 @@ public class Mapping {
     private String className;
     private String methodName;
     private Class classe;
-<<<<<<< Updated upstream
-
-    public Class getClasse() {
-        return classe;
-    }
-
-    public Method getMethode() {
-        return methode;
-    }
-
-    private Method methode;
-
-    public Mapping(String className, String methodName, Class classe, Method method) {
-=======
     private List<VerbAction> verbaction;
     public Class getClasse() {
         return classe;
     }
     public Mapping(String className, String methodName, Class classe, List<VerbAction> verbaction) {
->>>>>>> Stashed changes
         this.className = className;
         this.methodName = methodName;
         this.classe = classe;
-<<<<<<< Updated upstream
-=======
         this.verbaction=verbaction;
->>>>>>> Stashed changes
     }
     public String retour() {
         String valiny = "";
@@ -94,15 +76,7 @@ public class Mapping {
     }
    
 
-<<<<<<< Updated upstream
-    public Object getReponse(HttpServletRequest request) throws Exception {
-        Parameter[] parameters = methode.getParameters();
-        Object[] args = new Object[parameters.length];
-
-        for (int i = 0; i < parameters.length; i++) {
-=======
    
->>>>>>> Stashed changes
 
    
 
@@ -110,40 +84,5 @@ public class Mapping {
 
    
 
-<<<<<<< Updated upstream
-                        }
-                    }
-                }
-                args[i] = object;
-              
-
-            }
-        }
-        Object instanceControlleur = classe.getDeclaredConstructor().newInstance();
-        checkSession(instanceControlleur, request.getSession());
-        return methode.invoke(instanceControlleur, args);
-
-    }
-
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
-    public void checkSession(Object controlleur, HttpSession session) throws Exception {
-        Field[] attributes = controlleur.getClass().getDeclaredFields();
-        for (int i = 0; i < attributes.length; i++) {
-            if (attributes[i].getType().getName().equals(MySession.class.getName())) {
-                
-                attributes[i].setAccessible(true);
-                attributes[i].set(controlleur, new MySession(session));
-            }
-        }
-    }
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
-=======
    
->>>>>>> Stashed changes
 }
