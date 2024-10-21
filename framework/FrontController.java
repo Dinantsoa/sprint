@@ -122,7 +122,9 @@ public class FrontController extends HttpServlet {
                     }
                 } 
             } else {
-                out.println("<h1>No Methode sur : " + requestUrl + "</h1>");
+                Exception e=new Exception("No methode sur "+requestUrl);
+                response.sendError(404,e.getMessage());
+                // out.println("<h1>No Methode sur : " + requestUrl + "</h1>");
             }
         } catch (Exception e) {
             response.sendError(405,e.getMessage());
@@ -149,7 +151,7 @@ public class FrontController extends HttpServlet {
                             if (class1.isAnnotationPresent(Annote.class)) {
                                 Annote annotation = (Annote) class1.getAnnotation(Annote.class);
                                 if (annotation.value().equalsIgnoreCase("Controlleur")) {
-                                    // liste.add(nomClasse + ".class");
+
                                     liste.add(class1);
                                 }
                             }
@@ -161,7 +163,7 @@ public class FrontController extends HttpServlet {
                 }
 
             } else {
-                Exception ex = new Exception("Tsisy package");
+                Exception ex = new Exception(" no package");
                 throw ex;
             }
 
@@ -169,7 +171,7 @@ public class FrontController extends HttpServlet {
             throw e;
         }
         if (liste.size() == 0) {
-            Exception e = new Exception("Tsisy controlleur");
+            Exception e = new Exception("no or controller");
             throw e;
         }
         return liste;
@@ -199,7 +201,7 @@ public class FrontController extends HttpServlet {
                 }
                 String concateNomVerb=nomUrl+verb;
                 if (listeNom.contains(concateNomVerb)) {
-                    Exception e=new Exception("Methode "+nomUrl+ " double");
+                      throw new Exception("La Url " + nomUrl + " avec le verbe " + verb + " est définie plusieurs fois.");
                 }
                 listeNom.add(concateNomVerb);
                 VerbAction verbAction=new VerbAction(verb,methode);
