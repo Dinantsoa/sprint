@@ -1,8 +1,11 @@
 package framework;
 
+import java.io.File;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Enumeration;
 
@@ -10,9 +13,14 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
+
 public class VerbAction {
     private String verb;
     private Method methode;
+
+    private static final String UPLOAD_DIRECTORY = "/uploads";
     public VerbAction(){
         
     }
@@ -110,7 +118,7 @@ public class VerbAction {
         // Retourner null si aucune méthode correspondante n'est trouvée
 
     }
-     public Object getReponse(HttpServletRequest request,Class classe) throws Exception {
+     public Object getReponse(HttpServletRequest request,Class classe,HttpServletResponse response) throws Exception {
         Parameter[] parameters = methode.getParameters();
         Object[] args = new Object[parameters.length];
         String typeMethode=request.getMethod();
@@ -125,6 +133,9 @@ public class VerbAction {
                     Param param = parameters[i].getAnnotation(Param.class);
                     String paramName = param.value();
                     String paramValue = request.getParameter(paramName);
+                    // if(parameters[i].getType()==Part.class){
+                    //     //telecharge(request, response);
+                    // }
                     args[i] = mamadikaObject(parameters[i].getType(), paramValue);
                 } else {
                     ServletException e = new ServletException("ETU 2759 Exception misy tsy annote");
@@ -134,7 +145,26 @@ public class VerbAction {
                 HttpSession session = request.getSession();
                 MySession mysession = new MySession(session);
                 args[i] = mysession;
-            } else {
+            }  else if (parameters[i].getType() == Part.class) {
+                if (parameters[i].isAnnotationPresent(Param.class)) {
+                    Param param = parameters[i].getAnnotation(Param.class);
+                    String paramName = param.value();
+                    
+                    // Assurez-vous que la requête contient le fichier
+                    Part part = request.getPart(paramName);
+                    if (part != null) {
+                        args[i] = part;
+                    } else {
+                        response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Fichier non trouvé pour: " + paramName);
+                        throw new ServletException("Fichier non trouvé");
+                    }
+                } else {
+                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Paramètre manquant pour Part");
+                    throw new ServletException("Paramètre manquant pour Part");
+                }
+            }
+
+            else {
                 ArrayList<String> listeParametre = makaParametre(request);
                 String nomParametre = parameters[i].getName();
                 if (parameters[i].isAnnotationPresent(Param.class)) {
@@ -169,5 +199,7 @@ public class VerbAction {
         return methode.invoke(instanceControlleur, args);
 
     }
-
+   
+    
 }
+
