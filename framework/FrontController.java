@@ -3,6 +3,7 @@ package mg.itu.prom16;
 import java.io.File;
 import java.io.PrintWriter;
 import javax.servlet.*;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.*;
 
 import java.lang.reflect.*;
@@ -17,6 +18,7 @@ import com.google.gson.Gson;
 import framework.*;
 
 // FontController
+@MultipartConfig
 public class FrontController extends HttpServlet {
 
     private HashMap<String, Mapping> zeanotte;
@@ -84,7 +86,7 @@ public class FrontController extends HttpServlet {
                 Method method = mapping.getMethode(request,response);
                 Class classe = mapping.getClasse();
                 Object instance = classe.getDeclaredConstructor().newInstance();
-                Object valiny = mapping.getReponse(request);
+                Object valiny = mapping.getReponse(request,response);
                 if (method.isAnnotationPresent(RestAPI.class)) {
                     response.setContentType("application/json");
                     Gson gson=new Gson();
@@ -112,7 +114,6 @@ public class FrontController extends HttpServlet {
                         HashMap<String, Object> data = modelView.getData();
                         for (Map.Entry<String, Object> entry : data.entrySet()) {
                             request.setAttribute(entry.getKey(), entry.getValue());
-    
                         }
                         request.getRequestDispatcher(url).forward(request, response);
     
