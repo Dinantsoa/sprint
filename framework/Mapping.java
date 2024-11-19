@@ -60,12 +60,12 @@ public class Mapping {
     public String getMethodName() {
         return this.methodName;
     }
-    public Object getReponse(HttpServletRequest request){
+    public Object getReponse(HttpServletRequest request,HttpServletResponse response){
         Object valiny=null;
         try {
             for(VerbAction vA : verbaction){
                 if(vA.getVerb().equals(request.getMethod())){
-                    valiny=vA.getReponse(request, classe);
+                    valiny=vA.getReponse(request, classe,response);
                 }
             }
         } catch (Exception e) {

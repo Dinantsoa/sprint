@@ -133,9 +133,6 @@ public class VerbAction {
                     Param param = parameters[i].getAnnotation(Param.class);
                     String paramName = param.value();
                     String paramValue = request.getParameter(paramName);
-                    // if(parameters[i].getType()==Part.class){
-                    //     //telecharge(request, response);
-                    // }
                     args[i] = mamadikaObject(parameters[i].getType(), paramValue);
                 } else {
                     ServletException e = new ServletException("ETU 2759 Exception misy tsy annote");
@@ -189,6 +186,15 @@ public class VerbAction {
 
                         }
                     }
+                }
+
+                ArrayList<String> listeValidation=Validation.manaoValidation(object);
+                if(listeValidation.size()>0)
+                {
+                    Exception e=new Exception(String.join(",", listeValidation));
+                    // throw e;
+
+
                 }
                 args[i] = object;
 
