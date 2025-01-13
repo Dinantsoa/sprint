@@ -2,28 +2,30 @@ package framework;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 public class Validation {
 
 
-    public static String nonNullValidation(Object obj,Field field) throws IllegalAccessException
+    public static Erreur nonNullValidation(Object obj,Field field) throws IllegalAccessException
     {
-        String valiny=null;
-        if (field.isAnnotationPresent(NotNull.class)) {
+        Erreur valiny=null;
+        if (field.isAnnotationPresent(NonNull.class)) {
             field.setAccessible(true);
             Object value = field.get(obj);
             if (value == null) {
-                NotNull annotationNonNull = field.getAnnotation(NotNull.class);
-                valiny=field.getName() + " (" + annotationNonNull.message() + ")";
+                NonNull annotationNonNull = field.getAnnotation(NonNull.class);
+                valiny=new Erreur(annotationNonNull.message(),null);
+                
             }
         }
 
         return valiny;
 
     }
-    public static String minValidator(Object obj,Field field) throws IllegalAccessException{
-        String valiny=null;
+    public static Erreur minValidator(Object obj,Field field) throws IllegalAccessException{
+        Erreur valiny=null;
         if (field.isAnnotationPresent(Min.class)) {
             field.setAccessible(true);
             Object value = field.get(obj);
@@ -36,7 +38,10 @@ public class Validation {
                     Integer intValue=(Integer) value;
                     if (intValue < minValue) {
                         // Ajouter une erreur si la valeur est inférieure au minimum
-                        valiny=field.getName() + ": " + annotationMin.message().replace("{value}", String.valueOf(minValue));
+                        String errorMessage = annotationMin.message()
+                                .replace("{value}", String.valueOf(annotationMin.value()));
+                        valiny=new Erreur(errorMessage,String.valueOf(intValue));
+                        
                     }
                 }
                 
@@ -44,9 +49,9 @@ public class Validation {
         }
         return valiny;
     }
-    public static String maxValidator(Object obj,Field field) throws IllegalAccessException
+    public static Erreur maxValidator(Object obj,Field field) throws IllegalAccessException
     {
-        String valiny=null;
+        Erreur valiny=null;
         if (field.isAnnotationPresent(Max.class)) {
             field.setAccessible(true);
             Object value = field.get(obj);
@@ -59,7 +64,10 @@ public class Validation {
                     Integer intValue=(Integer) value;
                     if (intValue > maxValue) {
                         // Ajouter une erreur si la valeur est inférieure au minimum
-                        valiny=field.getName() + ": " + annotationMax.message().replace("{value}", String.valueOf(maxValue));
+                        String errorMessage = annotationMax.message()
+                                .replace("{value}", String.valueOf(annotationMax.value()));
+                        valiny=new Erreur(errorMessage,String.valueOf(intValue));
+                        
                     }
                 }
                 
@@ -67,32 +75,60 @@ public class Validation {
         }
         return valiny;
     }
-    public  static ArrayList<String> manaoValidation(Object obj) throws IllegalAccessException {
-        ArrayList<String> valiny = new ArrayList<>();
-        Field[] fields = obj.getClass().getDeclaredFields();
+    public static Erreur getErreurParField(Object obj,Field field) throws IllegalAccessException
+    {
 
-        for (Field field : fields) {
-            String nullField=nonNullValidation(obj, field);
-            if (nullField!=null) {
-                valiny.add(nullField);
-
+        Erreur valiny=null;
+        Erreur nullField=nonNullValidation(obj, field);
+        
+        if (nullField!=null) {
+            if (valiny==null) {
+                valiny=nullField;
                 
             }
-            String minField=minValidator(obj, field);
-            if (minField!=null) {
-                valiny.add(minField);
 
-                
-            }
-            String maxField=maxValidator(obj, field);
-            if (maxField!=null) {
-                valiny.add(maxField);
 
-                
-            }
-           
+                    
         }
+        Erreur minField=minValidator(obj, field);
+        if (minField!=null) {
+            if (valiny==null) {
+
+                valiny=minField;
+            }
+            valiny.manampyErreur(minField);
+            
+        }
+        Erreur maxField=maxValidator(obj, field);
+        if (maxField!=null) {
+            if (valiny==null) {
+                valiny=maxField;
+
+            }
+            valiny.manampyErreur(maxField);
+
+                 
+        }
+
+        
         return valiny;
+
+
+
     }
+    // public  static HashMap<String,Erreur> manaoValidation(Object obj) throws IllegalAccessException {
+    //     HashMap<String,Erreur> valiny = new HashMap<String,Erreur>();
+    //     Field[] fields = obj.getClass().getDeclaredFields();
+
+    //     for (Field field : fields) {
+    //         Erreur erreur=getErreurParField(obj, field);
+    //         valiny.put(field.getName(), erreur);
+            
+            
+            
+           
+    //     }
+    //     return valiny;
+    // }
     
 }

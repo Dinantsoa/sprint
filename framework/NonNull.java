@@ -6,6 +6,6 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface NotNull {
+public @interface NonNull {
     String message() default "Ce champ ne doit pas être null";
 }
