@@ -26,6 +26,7 @@ public class FrontController extends HttpServlet {
     private String authentification;
     private String profil;
 
+
     public void init() throws ServletException {
         ServletContext context = getServletContext();
         String chemin = context.getInitParameter("chemin");
@@ -119,7 +120,7 @@ public class FrontController extends HttpServlet {
 
 
                 verifierAuthorisation(method,isAuthentifier,profilUtilisateur);
-                
+
                 Class classe = mapping.getClasse();
                 Object valiny = mapping.getReponse(request,response);
                 
@@ -278,7 +279,6 @@ public class FrontController extends HttpServlet {
 
                     }
                     
-                    
                 }
             if (get>1||post>1) {
                 ServletException ex=new ServletException("Miverina ny meme methode "+jerena);
@@ -320,8 +320,4 @@ public class FrontController extends HttpServlet {
             }
         }
     }
-    
-    
-
-
 }
