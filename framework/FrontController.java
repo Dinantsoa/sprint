@@ -23,11 +23,16 @@ import com.google.gson.Gson;
 public class FrontController extends HttpServlet {
 
     private HashMap<String, Mapping> zeanotte;
+    private String authentification;
+    private String profil;
 
 
     public void init() throws ServletException {
         ServletContext context = getServletContext();
         String chemin = context.getInitParameter("chemin");
+        authentification=context.getInitParameter("authentification");
+        profil=context.getInitParameter("profil");
+
         zeanotte = new HashMap<>();
         try {
             List<Class> controlleurs = scan(chemin);
@@ -97,6 +102,7 @@ public class FrontController extends HttpServlet {
         PrintWriter out = response.getWriter();
         ServletContext context = getServletContext();
         String chemin = context.getInitParameter("chemin");
+        HttpSession session = request.getSession();
         try {
             String requestUrl = request.getRequestURI();// maka an'ilay url
             requestUrl = requestUrl.substring(requestUrl.lastIndexOf('/') + 1);
@@ -108,6 +114,13 @@ public class FrontController extends HttpServlet {
 
             if (mapping != null) {
                 Method method = mapping.getMethode(request);
+
+                boolean isAuthentifier = Boolean.TRUE.equals(session.getAttribute(authentification));
+                String profilUtilisateur = (session.getAttribute(profil) != null) ? (String) session.getAttribute(profil) : "";
+
+
+                verifierAuthorisation(method,isAuthentifier,profilUtilisateur);
+
                 Class classe = mapping.getClasse();
                 Object valiny = mapping.getReponse(request,response);
                 
@@ -266,7 +279,6 @@ public class FrontController extends HttpServlet {
 
                     }
                     
-                    
                 }
             if (get>1||post>1) {
                 ServletException ex=new ServletException("Miverina ny meme methode "+jerena);
@@ -276,7 +288,36 @@ public class FrontController extends HttpServlet {
 
 
     }
+    public static void verifierAuthorisation(Method methode, boolean isAuthentifier, String profilUtilisateur) throws Exception {
+        if (methode.isAnnotationPresent(Autorisation.class)) {
+            // Vérifie si l'utilisateur est authentifié
+            if (!isAuthentifier) {
+                throw new SecurityException("Accès refusé : Vous devez vous authentifier d'abord.");
+            }
     
-
-
+            // Récupération de l'annotation et des profils autorisés
+            Autorisation annotation = methode.getAnnotation(Autorisation.class);
+            String[] profilsAutorises = annotation.profils();
+    
+            // Si aucun profil n'est spécifié, autorise l'accès par défaut
+            if (profilsAutorises.length == 0) {
+                return; // Accès autorisé sans restriction
+            }
+    
+            // Vérifie si le profil utilisateur est dans les profils autorisés
+            boolean autorise = false;
+            for (String profil : profilsAutorises) {
+                if (profil.equalsIgnoreCase(profilUtilisateur)) {
+                    autorise = true;
+                    break;
+                }
+            }
+    
+            // Si l'utilisateur n'est pas autorisé, lance une exception avec les profils autorisés
+            if (!autorise) {
+                throw new SecurityException("Accès refusé pour le profil : " + profilUtilisateur +
+                    ". Profils autorisés : " + String.join(", ", profilsAutorises));
+            }
+        }
+    }
 }
