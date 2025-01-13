@@ -1,54 +1,79 @@
-package mg.itu.prom16;
+package controller.front;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import javax.servlet.*;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.*;
 
 import java.lang.reflect.*;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.Gson;
-
 import framework.*;
+import com.google.gson.Gson;
 
 // FontController
 @MultipartConfig
 public class FrontController extends HttpServlet {
 
     private HashMap<String, Mapping> zeanotte;
+    private String authentification;
+    private String profil;
 
     public void init() throws ServletException {
         ServletContext context = getServletContext();
         String chemin = context.getInitParameter("chemin");
+        authentification=context.getInitParameter("authentification");
+        profil=context.getInitParameter("profil");
+
         zeanotte = new HashMap<>();
         try {
             List<Class> controlleurs = scan(chemin);
-            List<VerbAction> verbaction=new ArrayList<>(); 
+            
+            List<String> listeNom = new ArrayList<>();
 
-            for (int i = 0; i < controlleurs.size(); i++) { 
+            for (int i = 0; i < controlleurs.size(); i++) {
                 List<Method> methodes = getMethode(controlleurs.get(i));
+                List<String> listeNomAnatina = new ArrayList<>();
                 for (Method method : methodes) {
-                    String verb = "GET";
+                    String verb="GET";
+                    
                     Url getannotation = method.getAnnotation(Url.class);
+                    
                     String nom = getannotation.value();
-                    if(method.isAnnotationPresent(Post.class)){
+                    
+                    
+                    if (method.isAnnotationPresent(Post.class)) {
                         verb="POST";
+                        
                     }
-                    verbaction=getMethodeMemeNom(controlleurs.get(i), nom);
-                    zeanotte.put(nom,
-                            new Mapping(controlleurs.get(i).getSimpleName(),
-                                    method.getName(), controlleurs.get(i), verbaction));
-                }
+                    ArrayList<VerbAction> vba=makaVerbActions(controlleurs.get(i), nom);
 
+                    
+                        
+                    if (!listeNomAnatina.contains(nom)) {
+                        if (listeNom.contains(nom)) {
+                            Exception e = new Exception("Efa niverina ny url " + nom);
+                            throw e;
+                        }
+                        zeanotte.put(nom,
+                            new Mapping(controlleurs.get(i).getSimpleName(),controlleurs.get(i), vba));
+                            listeNomAnatina.add(nom);
+                            
+                            listeNom.add(nom);    
+                    }
+                    
+                    
+                }
             }
         } catch (Exception w) {
-            throw new ServletException("Erreur lors de l'initialisation du FrontController", w);
+            throw new ServletException("Erreur lors de l'initialisation du FrontController "+w.getMessage());
         }
 
     }
@@ -76,63 +101,100 @@ public class FrontController extends HttpServlet {
         PrintWriter out = response.getWriter();
         ServletContext context = getServletContext();
         String chemin = context.getInitParameter("chemin");
+        HttpSession session = request.getSession();
         try {
             String requestUrl = request.getRequestURI();// maka an'ilay url
             requestUrl = requestUrl.substring(requestUrl.lastIndexOf('/') + 1);
+
+            
             Mapping mapping = null;
+            // requestUrl = "andrana";
             mapping = zeanotte.get(requestUrl);
 
             if (mapping != null) {
-                Method method = mapping.getMethode(request,response);
-                Class classe = mapping.getClasse();
-                Object instance = classe.getDeclaredConstructor().newInstance();
-                Object valiny = mapping.getReponse(request,response);
-                if (method.isAnnotationPresent(RestAPI.class)) {
-                    response.setContentType("application/json");
-                    Gson gson=new Gson();
-                    String val="";
-                    if (valiny instanceof ModelView) {
-                        ModelView modelView = (ModelView) valiny;
-                        String url = modelView.getUrl();
-                        HashMap<String, Object> data = modelView.getData();
-                        val=gson.toJson(data);
-                    }else{
-                        val=gson.toJson(valiny);
+                Method method = mapping.getMethode(request);
 
-                    }
-                    out.println(val);
-                }
-                else{
+                boolean isAuthentifier = Boolean.TRUE.equals(session.getAttribute(authentification));
+                String profilUtilisateur = (session.getAttribute(profil) != null) ? (String) session.getAttribute(profil) : "";
+
+
+                verifierAuthorisation(method,isAuthentifier,profilUtilisateur);
+                
+                Class classe = mapping.getClasse();
+                Object valiny = mapping.getReponse(request,response);
+                
+
+
+                
+                if (!method.isAnnotationPresent(Restapi.class)) {
                     if (valiny instanceof String) {
                         out.println("<h1>URL: " + requestUrl + "</h1>");
                         out.println("<p>Class: " + mapping.getClassName() + "</p>");
-                        out.println("<p>Retour: " + mapping.retour() + "</p>");
-                        out.println("<p>Method: " + mapping.getMethodName() + "</p>");
+                        out.println("<p>Retour: " + (String)valiny + "</p>");
+                        
                     } else if (valiny instanceof ModelView) {
                         ModelView modelView = (ModelView) valiny;
                         String url = modelView.getUrl();
                         HashMap<String, Object> data = modelView.getData();
                         for (Map.Entry<String, Object> entry : data.entrySet()) {
                             request.setAttribute(entry.getKey(), entry.getValue());
+    
                         }
+                        
+                        
+                        // String typeRequest=mijeryTypeRequest(url);
+                        request = new MethodOverrideRequestWrapper(request, "GET");
                         request.getRequestDispatcher(url).forward(request, response);
     
                     } else {
                         response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Non reconnue.");
     
+                    }    
+                }
+                else{
+                    
+                    response.setContentType("application/json");
+                    //response.setCharacterEncoding("UTF-8");
+                    Gson gson = new Gson();
+                    String json="";
+                    if (valiny instanceof ModelView) {
+                        ModelView modelView = (ModelView) valiny;
+                        String url = modelView.getUrl();
+                        HashMap<String, Object> data = modelView.getData();
+                        for (Map.Entry<String, Object> entry : data.entrySet()) {
+                            request.setAttribute(entry.getKey(), entry.getValue());
+    
+                        }
+                        json=gson.toJson(data);
+    
+                        // request.getRequestDispatcher(url).forward(request, response);
+                        
+                    } else {
+                        
+                        json = gson.toJson(valiny);
+                        
+                        
+    
                     }
-                } 
+                    out.println(json);
+                    
+                }
+                
+
             } else {
-                Exception e=new Exception("No methode sur "+requestUrl);
-                response.sendError(404,e.getMessage());
                 // out.println("<h1>No Methode sur : " + requestUrl + "</h1>");
+                response.sendError(404,"No methode sur "+requestUrl);
             }
+            
         } catch (Exception e) {
-            response.sendError(405,e.getMessage());
+            out.println(e.getMessage());
+            response.sendError(500, e.getMessage());
         } finally {
             out.close();
         }
     }
+
+
 
     public List<Class> scan(String chemin) throws Exception {
         List<Class> liste = new ArrayList<Class>();
@@ -152,7 +214,7 @@ public class FrontController extends HttpServlet {
                             if (class1.isAnnotationPresent(Annote.class)) {
                                 Annote annotation = (Annote) class1.getAnnotation(Annote.class);
                                 if (annotation.value().equalsIgnoreCase("Controlleur")) {
-
+                                    // liste.add(nomClasse + ".class");
                                     liste.add(class1);
                                 }
                             }
@@ -164,7 +226,7 @@ public class FrontController extends HttpServlet {
                 }
 
             } else {
-                Exception ex = new Exception(" no package");
+                Exception ex = new Exception("Tsisy package");
                 throw ex;
             }
 
@@ -172,7 +234,7 @@ public class FrontController extends HttpServlet {
             throw e;
         }
         if (liste.size() == 0) {
-            Exception e = new Exception("no or controller");
+            Exception e = new Exception("Tsisy controlleur");
             throw e;
         }
         return liste;
@@ -184,31 +246,82 @@ public class FrontController extends HttpServlet {
         for (Method method : methodes) {
             if (method.isAnnotationPresent(Url.class)) {
                 liste.add(method);
+
             }
         }
         return liste;
     }
-    List<VerbAction> getMethodeMemeNom(Class <?> nomClass,String nomMethode) throws Exception{
-        List<VerbAction> retour=new ArrayList<>();
-        List<Method> methodes=getMethode(nomClass);
-        List<String> listeNom = new ArrayList<>();
-        for(Method methode : methodes){
-            String verb="GET";
-            Url url = methode.getAnnotation(Url.class);
-            String nomUrl=url.value(); 
-            if (nomUrl.equalsIgnoreCase(nomMethode)) {
-                if (methode.isAnnotationPresent(Post.class)) {
-                    verb="POST";   
+    public ArrayList<VerbAction> makaVerbActions(Class<?> cl,String jerena) throws ServletException
+    {
+        ArrayList<VerbAction> valiny=new ArrayList<>();
+        List<Method> methodes = getMethode(cl);
+        int get=0;
+        int post=0;
+                for (Method method : methodes) {
+                    
+                    String verb="GET";
+                    
+                    Url getannotation = method.getAnnotation(Url.class);
+                    
+                    String nom = getannotation.value();
+                    
+                    if (nom.equalsIgnoreCase(jerena)) {
+                        if (method.isAnnotationPresent(Post.class)) {
+                            verb="POST";
+                            post++;
+                            get--;
+                            
+                        }
+                        get++;       
+                        VerbAction vb=new VerbAction(verb,method);
+                        valiny.add(vb);
+
+                    }
+                    
+                    
                 }
-                String concateNomVerb=nomUrl+verb;
-                if (listeNom.contains(concateNomVerb)) {
-                      throw new Exception("La Url " + nomUrl + " avec le verbe " + verb + " est définie plusieurs fois.");
+            if (get>1||post>1) {
+                ServletException ex=new ServletException("Miverina ny meme methode "+jerena);
+                throw ex;
+            }
+            return valiny;
+
+
+    }
+    public static void verifierAuthorisation(Method methode, boolean isAuthentifier, String profilUtilisateur) throws Exception {
+        if (methode.isAnnotationPresent(Autorisation.class)) {
+            // Vérifie si l'utilisateur est authentifié
+            if (!isAuthentifier) {
+                throw new SecurityException("Accès refusé : Vous devez vous authentifier d'abord.");
+            }
+    
+            // Récupération de l'annotation et des profils autorisés
+            Autorisation annotation = methode.getAnnotation(Autorisation.class);
+            String[] profilsAutorises = annotation.profils();
+    
+            // Si aucun profil n'est spécifié, autorise l'accès par défaut
+            if (profilsAutorises.length == 0) {
+                return; // Accès autorisé sans restriction
+            }
+    
+            // Vérifie si le profil utilisateur est dans les profils autorisés
+            boolean autorise = false;
+            for (String profil : profilsAutorises) {
+                if (profil.equalsIgnoreCase(profilUtilisateur)) {
+                    autorise = true;
+                    break;
                 }
-                listeNom.add(concateNomVerb);
-                VerbAction verbAction=new VerbAction(verb,methode);
-                retour.add(verbAction);
+            }
+    
+            // Si l'utilisateur n'est pas autorisé, lance une exception avec les profils autorisés
+            if (!autorise) {
+                throw new SecurityException("Accès refusé pour le profil : " + profilUtilisateur +
+                    ". Profils autorisés : " + String.join(", ", profilsAutorises));
             }
         }
-        return retour;
     }
+    
+    
+
+
 }

@@ -1,61 +1,92 @@
 package framework;
 
-import java.io.File;
-import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
+import javax.servlet.ServletException;
 
-public class VerbAction {
+
+public class VerbAction{
     private String verb;
-    private Method methode;
-
-    private static final String UPLOAD_DIRECTORY = "/uploads";
-    public VerbAction(){
+    private Method action;
+    public VerbAction()
+    {
         
     }
-    public VerbAction (String verb,Method methode){
-        this.verb=verb;
-        this.methode=methode;
+    public VerbAction(String verb, Method action) {
+        this.verb = verb;
+        this.action = action;
     }
     public String getVerb() {
         return verb;
     }
-    public Method getMethode() {
-        return methode;
+    public Method getAction() {
+        return action;
+    }
+    public void setVerb(String verb) {
+        this.verb = verb;
+    }
+    public void setAction(Method action) {
+        this.action = action;
+    }
+    public Method getMethodByName(Class<?> cls, String methodName) throws Exception { 
+        // Obtenir toutes les méthodes de la classe
+        Method[] methods = cls.getDeclaredMethods();
+        for (Method method : methods) {
+            // Vérifier si le nom de la méthode correspond au nom donné
+            if (method.getName().equals(methodName)) {
+                return method;
+                
+            }
+        }
+        Exception e=new Exception("Tsisy methode");
+        throw e;
+        // Retourner null si aucune méthode correspondante n'est trouvée
+        
+    }
+    public ArrayList<String> makaParametre(HttpServletRequest request) throws Exception
+    {
+        Enumeration<String> parameterNames = request.getParameterNames();
+        ArrayList<String> valiny=new ArrayList<String>();
+
+        while (parameterNames.hasMoreElements()) {
+            String name = parameterNames.nextElement();
+                valiny.add(name);
+            
+            
+        }
+        if (request.getContentType() != null && request.getContentType().startsWith("multipart/form-data")) {
+            // Récupérer les noms des parties (fichiers et autres parties multipart)
+            for (Part part : request.getParts()) {
+                String partName = part.getName();
+                // Ajouter uniquement si ce nom n'est pas déjà dans la liste
+                if (!valiny.contains(partName)) {
+                    valiny.add(partName);
+                }
+            }
+        }
+        return valiny;
     }
     public boolean isPrimitiveOrString(Class<?> paramType) {
         return paramType.isPrimitive() || paramType.equals(String.class);
     }
-    public String retour(Class classe) {
-        String valiny = "";
-        try {
-            Object instance = classe.getDeclaredConstructor().newInstance();
-            valiny = this.methode.invoke(instance).toString();
-        } catch (Exception e) {
-            valiny = "Tsy mety";
-        }
-        return valiny;
-    }
-    private static Object mamadikaObject(Class<?> clazz, String value) throws Exception {
+    private static Object mamadikaObject(Class<?> clazz,String value) throws Exception {
         if (value == null) {
-            if (clazz == int.class || clazz == Integer.class) {
+            if (clazz == int.class) {
                 return 0; // Valeur par défaut pour int
             }
             // Gestion d'autres types par défaut ici si nécessaire
         }
         try {
-            if (clazz.equals(String.class)) {
+            if (clazz == String.class) {
                 return value;
             } else if (clazz == int.class || clazz == Integer.class) {
                 return Integer.parseInt(value);
@@ -73,76 +104,104 @@ public class VerbAction {
                 return Byte.parseByte(value);
             }
             // Ajouter d'autres types si nécessaire
-
+    
             // Si le type n'est pas géré, lever une exception
-            throw new IllegalArgumentException("Cannot convert String to " + clazz.getName());
+            throw new IllegalArgumentException("Cannot convert String to " + clazz.getName());    
         } catch (Exception e) {
-
-            Object averina = clazz.getConstructor().newInstance();
-            return averina;
+            
+            Object averina=clazz.getConstructor().newInstance();
+            return averina;    
         }
-
+        
+            
+        
     }
-     public ArrayList<String> makaParametre(HttpServletRequest request) throws Exception {
-        Enumeration<String> parameterNames = request.getParameterNames();
-        ArrayList<String> valiny = new ArrayList<String>();
-
-        while (parameterNames.hasMoreElements()) {
-            String name = parameterNames.nextElement();
-            valiny.add(name);
+    public static Field getField(Object object, String fieldName) throws NoSuchFieldException {
+        if (object == null || fieldName == null || fieldName.isEmpty()) {
+            throw new IllegalArgumentException("L'objet ou le nom du champ ne peut pas être null ou vide.");
         }
-        return valiny;
+        
+        Class<?> clazz = object.getClass();
+        while (clazz != null) {
+            try {
+                // Tente de récupérer le champ dans la classe actuelle
+                Field field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true); // Rend le champ accessible même s'il est privé
+                return field;
+            } catch (NoSuchFieldException e) {
+                // Si le champ n'existe pas dans la classe actuelle, on regarde dans la classe parente
+                clazz = clazz.getSuperclass();
+            }
+        }
+        
+        // Si le champ n'est trouvé dans aucune classe (y compris les classes parentes)
+        throw new NoSuchFieldException("Champ '" + fieldName + "' introuvable dans l'objet donné.");
     }
-    public void checkSession(Object controlleur, HttpSession session) throws Exception {
-        Field[] attributes = controlleur.getClass().getDeclaredFields();
-        for (int i = 0; i < attributes.length; i++) {
-            if (attributes[i].getType().getName().equals(MySession.class.getName())) {
-                
-                attributes[i].setAccessible(true);
-                attributes[i].set(controlleur, new MySession(session));
+    public void injectMySession(Object target, MySession mySession) {
+        Class<?> clazz = target.getClass();
+        Field[] fields = clazz.getDeclaredFields();
+
+        for (Field field : fields) {
+            if (field.getType().equals(MySession.class)) {
+                try {
+                    field.setAccessible(true);
+                    field.set(target, mySession);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
-    public Method getMethodByName(Class<?> cls, String methodName) throws Exception {
-        // Obtenir toutes les méthodes de la classe
-        Method[] methods = cls.getDeclaredMethods();
-        for (Method method : methods) {
-            // Vérifier si le nom de la méthode correspond au nom donné
-            if (method.getName().equals(methodName)) {
-                return method;
+    
 
-            }
-        }
-        Exception e = new Exception("Tsisy methode");
-        throw e;
-        // Retourner null si aucune méthode correspondante n'est trouvée
 
-    }
-     public Object getReponse(HttpServletRequest request,Class classe,HttpServletResponse response) throws Exception {
-        Parameter[] parameters = methode.getParameters();
+    
+    public Object getReponse(HttpServletRequest request,HttpServletResponse response,Class classe) throws Exception
+    {
+        
+        
+        Parameter[] parameters = action.getParameters();
         Object[] args = new Object[parameters.length];
-        String typeMethode=request.getMethod();
-        if(!this.verb.equalsIgnoreCase(typeMethode)){
-            throw new Exception("Erreur lors du type methode different" +" "+ typeMethode + " "+ this.verb );
+        String verb=request.getMethod();
+        String erreurParametre="Etu 2565 : Tsisy parametre ny methode";
+        AllErreur allErreur=new AllErreur();
+        
+        if (!verb.equalsIgnoreCase(this.getVerb())) {
+            String erreurMethod="Tsy mitovy ny verb "+verb+" "+ getVerb();
+            response.sendError(405, erreurMethod);
+            Exception e=new Exception(erreurMethod);
+            throw e;
+            
         }
         for (int i = 0; i < parameters.length; i++) {
-
+            
             if (isPrimitiveOrString(parameters[i].getType())) {
                 args[i] = request.getParameter(parameters[i].getName());
                 if (parameters[i].isAnnotationPresent(Param.class)) {
                     Param param = parameters[i].getAnnotation(Param.class);
                     String paramName = param.value();
                     String paramValue = request.getParameter(paramName);
-                    args[i] = mamadikaObject(parameters[i].getType(), paramValue);
-                } else {
-                    ServletException e = new ServletException("ETU 2759 Exception misy tsy annote");
+    
+                    // For simplicity, assume all parameters are of type String
+                    args[i] = mamadikaObject(parameters[i].getType(),paramValue);
+                }
+                else{
+                    
+                    response.sendError(500, erreurParametre);
+                    Exception e=new Exception(erreurParametre);
                     throw e;
                 }
-            } else if (parameters[i].getType().getName().equals(MySession.class.getName())) {
-                HttpSession session = request.getSession();
-                MySession mysession = new MySession(session);
-                args[i] = mysession;
-            }  else if (parameters[i].getType() == Part.class) {
+            }
+            else if (parameters[i].getType()==MySession.class) {
+                MySession mySession=new MySession(request.getSession());
+                args[i]=mySession;
+                
+            }
+            else if (parameters[i].getType()==HttpServletRequest.class) {
+                args[i]=request;
+                
+            }
+            else if (parameters[i].getType() == Part.class) {
                 if (parameters[i].isAnnotationPresent(Param.class)) {
                     Param param = parameters[i].getAnnotation(Param.class);
                     String paramName = param.value();
@@ -160,52 +219,102 @@ public class VerbAction {
                     throw new ServletException("Paramètre manquant pour Part");
                 }
             }
+            else if (parameters[i].getType() == AllErreur.class) {
+                args[i]=allErreur;
+            }
 
-            else {
-                ArrayList<String> listeParametre = makaParametre(request);
-                String nomParametre = parameters[i].getName();
+            else{
+                
+                ArrayList<String> listeParametre=makaParametre(request);
+                String nomParametre=parameters[i].getName();
                 if (parameters[i].isAnnotationPresent(Param.class)) {
                     Param param = parameters[i].getAnnotation(Param.class);
                     nomParametre = param.value();
-                } else {
-                    ServletException e = new ServletException("ETU 2759 exception misy tsy annote");
+                    
+                    
+                }
+                else{
+                    response.sendError(500, erreurParametre);
+                    Exception e=new Exception(erreurParametre);
                     throw e;
                 }
-                Class cl = parameters[i].getType();
-                Object object = cl.getConstructor().newInstance();
-                Object p[] = new Object[1];
-
+                Class cl=parameters[i].getType();
+                // Employer e=new Employer();
+                Object object=cl.getConstructor().newInstance();
+               
+                
+                // Object p[] = new Object[1];
+                
+                
                 for (String a : listeParametre) {
-                    String[] saraka = a.split("\\.");
-                    if (saraka.length > 1) {
+                    
+                    String[] saraka=a.split("\\.");
+                    if (saraka.length>1) {
                         if (saraka[0].equalsIgnoreCase(nomParametre)) {
-                            String maj = saraka[1].substring(0, 1).toUpperCase() + saraka[1].substring(1);
-                            Method m = getMethodByName(cl, "set" + maj);
-                            Parameter[] pa = m.getParameters();
-                            m.invoke(object, mamadikaObject(pa[0].getType(), request.getParameter(a)));
+                            String maj=saraka[1].substring(0, 1).toUpperCase() + saraka[1].substring(1);
+                            Method m = getMethodByName(cl, "set"+maj);
+                            Parameter[] pa=m.getParameters();
+                            String parametre=null;
+                            Object apidirina=null;
+                            for (Parameter p: pa) {
+                                if (p.getType()==Part.class) {
+                                    apidirina=request.getPart(a);
+                                    
+                                    
+                                }
+                                else{
+                                    
 
-                        }
+                                    parametre=request.getParameter(a);
+                                    if (parametre != null && !parametre.trim().isEmpty()) {
+                                        apidirina=mamadikaObject(p.getType(),parametre);    
+                                    }
+
+                                }
+                                
+                            }
+                            
+                            
+                            
+                            m.invoke(object,apidirina);
+                            Field f=getField(object, saraka[1]);
+                            Erreur erreur=Validation.getErreurParField(object,f);
+                            if (erreur==null) {
+                                erreur=new Erreur(null, parametre);
+                            }
+                            allErreur.ajouterListeErreur(a, erreur);
+
+
+                                                        
+                        }                        
                     }
-                }
-
-                ArrayList<String> listeValidation=Validation.manaoValidation(object);
-                if(listeValidation.size()>0)
-                {
-                    Exception e=new Exception(String.join(",", listeValidation));
-                    // throw e;
+                    // Exception ex=new Exception(saraka[1]);
+                    // throw ex;
 
 
                 }
-                args[i] = object;
+                // HashMap<String,Erreur> listeValidation=Validation.manaoValidation(object);
+                // if (listeValidation.size()>0) {
+                //     allErreur.ajouterListeErreur(nomParametre, listeValidation);
+                        
+                // }
+                
+                args[i]=object;
+                
+                
+                    
 
+                
             }
+            
+            
         }
-        Object instanceControlleur = classe.getDeclaredConstructor().newInstance();
-        checkSession(instanceControlleur, request.getSession());
-        return methode.invoke(instanceControlleur, args);
+        Object instance = classe.getDeclaredConstructor().newInstance();
+        
+        MySession mySession=new MySession(request.getSession());
+        injectMySession(instance, mySession);
+        return action.invoke(instance, args);
 
     }
-   
     
 }
-
