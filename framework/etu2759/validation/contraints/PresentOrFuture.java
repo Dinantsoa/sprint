@@ -1,11 +1,12 @@
-package framework;
+package framework.etu2759.validation.contraints;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+@Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface AutorisationClass {
-    String[] profils() default {};
+public @interface PresentOrFuture {
+    String message() default "Ce champ doit etre present ou future";
 }
