@@ -1,4 +1,5 @@
-package framework;
+package framework.etu2759.utils;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 

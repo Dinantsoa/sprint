@@ -1,4 +1,4 @@
-package framework;
+package framework.etu2759.utils;
 
 import java.lang.reflect.*;
 import java.util.ArrayList;

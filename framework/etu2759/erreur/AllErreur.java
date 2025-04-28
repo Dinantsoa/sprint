@@ -1,4 +1,5 @@
-package framework;
+package framework.etu2759.erreur;
+
 import java.util.HashMap;
 import java.util.Map;
 

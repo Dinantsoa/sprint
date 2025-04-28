@@ -1,4 +1,4 @@
-package controller.front;
+package framework.etu2759.controller;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,8 +15,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import framework.*;
 import com.google.gson.Gson;
+
+import framework.etu2759.annotation.*;
+import framework.etu2759.autorisation.*;
+import framework.etu2759.utils.*;
 
 // FontController
 @MultipartConfig
@@ -26,24 +29,16 @@ public class FrontController extends HttpServlet {
 	private String authentification;
 	private String profil;
 
-<<<<<<< Updated upstream
-
-    public void init() throws ServletException {
-        ServletContext context = getServletContext();
-        String chemin = context.getInitParameter("chemin");
-        authentification=context.getInitParameter("authentification");
-        profil=context.getInitParameter("profil");
-=======
 	public void init() throws ServletException {
 		ServletContext context = getServletContext();
 		String chemin = context.getInitParameter("chemin");
+		String nomControlleur = context.getInitParameter("nomControlleur");
 		authentification=context.getInitParameter("authentification");
 		profil=context.getInitParameter("profil");
->>>>>>> Stashed changes
 
 		zeanotte = new HashMap<>();
 		try {
-			List<Class<?>> controlleurs = scan(chemin);
+			List<Class<?>> controlleurs = scan(chemin,nomControlleur);
 			
 			List<String> listeNom = new ArrayList<>();
 
@@ -108,7 +103,7 @@ public class FrontController extends HttpServlet {
 
 	public void processRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-		PrintWriter out = response.getWriter();
+		PrintWriter out;
 		ServletContext context = getServletContext();
 		String chemin = context.getInitParameter("chemin");
 		HttpSession session = request.getSession();
@@ -131,23 +126,16 @@ public class FrontController extends HttpServlet {
 				verifierAuthorisation(method,isAuthentifier,profilUtilisateur,classe);
 				
 				
+
 				Object valiny = mapping.getReponse(request,response);
-				
-
-
-<<<<<<< Updated upstream
-                verifierAuthorisation(method,isAuthentifier,profilUtilisateur);
-
-                Class classe = mapping.getClasse();
-                Object valiny = mapping.getReponse(request,response);
-                
-=======
 				
 				if (!method.isAnnotationPresent(Restapi.class)) {
 					if (valiny instanceof String) {
+						out = response.getWriter();
 						out.println("<h1>URL: " + requestUrl + "</h1>");
 						out.println("<p>Class: " + mapping.getClassName() + "</p>");
 						out.println("<p>Retour: " + (String)valiny + "</p>");
+						out.close();
 						
 					} else if (valiny instanceof ModelView) {
 						ModelView modelView = (ModelView) valiny;
@@ -163,13 +151,14 @@ public class FrontController extends HttpServlet {
 						request = new MethodOverrideRequestWrapper(request, "GET");
 						request.getRequestDispatcher(url).forward(request, response);
 	
+					} else if (valiny instanceof ResponseEntity) {
+						((ResponseEntity)valiny).sendResponse(response);
 					} else {
 						response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Non reconnue.");
-	
 					}    
 				}
 				else{
-					
+					out = response.getWriter();
 					response.setContentType("application/json");
 					//response.setCharacterEncoding("UTF-8");
 					Gson gson = new Gson();
@@ -189,15 +178,11 @@ public class FrontController extends HttpServlet {
 					} else {
 						
 						json = gson.toJson(valiny);
-						
-						
-	
 					}
 					out.println(json);
-					
+					out.close();
 				}
 				
->>>>>>> Stashed changes
 
 			} else {
 				// out.println("<h1>No Methode sur : " + requestUrl + "</h1>");
@@ -205,16 +190,15 @@ public class FrontController extends HttpServlet {
 			}
 			
 		} catch (Exception e) {
-			out.println(e.getMessage());
+			// out.println(e.getMessage());
+			e.printStackTrace();
 			response.sendError(500, e.getMessage());
-		} finally {
-			out.close();
-		}
+		} 
 	}
 
 
 
-	public List<Class<?>> scan(String chemin) throws Exception {
+	public List<Class<?>> scan(String chemin,String nomControlleur) throws Exception {
 		List<Class<?>> liste = new ArrayList<Class<?>>();
 		// liste.add(chemin);
 		try {
@@ -231,13 +215,13 @@ public class FrontController extends HttpServlet {
 							Class<?> class1 = Class.forName(nomCompletClasse);
 							if (class1.isAnnotationPresent(Annote.class)) {
 								Annote annotation = (Annote) class1.getAnnotation(Annote.class);
-								if (annotation.value().equalsIgnoreCase("Controlleur")) {
+								if (annotation.value().equalsIgnoreCase(nomControlleur)) {
 									// liste.add(nomClasse + ".class");
 									liste.add(class1);
 								}
 							}
 						} else if (fichier.isDirectory()) {
-							List<Class<?>> li = scan(cheminRepertoire + "." + fichier.getName());
+							List<Class<?>> li = scan(cheminRepertoire + "." + fichier.getName(),nomControlleur);
 							liste.addAll(li);
 						}
 					}
@@ -294,51 +278,6 @@ public class FrontController extends HttpServlet {
 						VerbAction vb=new VerbAction(verb,method);
 						valiny.add(vb);
 
-<<<<<<< Updated upstream
-                    }
-                    
-                }
-            if (get>1||post>1) {
-                ServletException ex=new ServletException("Miverina ny meme methode "+jerena);
-                throw ex;
-            }
-            return valiny;
-
-
-    }
-    public static void verifierAuthorisation(Method methode, boolean isAuthentifier, String profilUtilisateur) throws Exception {
-        if (methode.isAnnotationPresent(Autorisation.class)) {
-            // Vérifie si l'utilisateur est authentifié
-            if (!isAuthentifier) {
-                throw new SecurityException("Accès refusé : Vous devez vous authentifier d'abord.");
-            }
-    
-            // Récupération de l'annotation et des profils autorisés
-            Autorisation annotation = methode.getAnnotation(Autorisation.class);
-            String[] profilsAutorises = annotation.profils();
-    
-            // Si aucun profil n'est spécifié, autorise l'accès par défaut
-            if (profilsAutorises.length == 0) {
-                return; // Accès autorisé sans restriction
-            }
-    
-            // Vérifie si le profil utilisateur est dans les profils autorisés
-            boolean autorise = false;
-            for (String profil : profilsAutorises) {
-                if (profil.equalsIgnoreCase(profilUtilisateur)) {
-                    autorise = true;
-                    break;
-                }
-            }
-    
-            // Si l'utilisateur n'est pas autorisé, lance une exception avec les profils autorisés
-            if (!autorise) {
-                throw new SecurityException("Accès refusé pour le profil : " + profilUtilisateur +
-                    ". Profils autorisés : " + String.join(", ", profilsAutorises));
-            }
-        }
-    }
-=======
 					}
 					
 					
@@ -421,5 +360,4 @@ public class FrontController extends HttpServlet {
 	
 
 
->>>>>>> Stashed changes
 }

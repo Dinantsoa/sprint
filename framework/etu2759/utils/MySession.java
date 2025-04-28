@@ -1,4 +1,4 @@
-package framework;
+package framework.etu2759.utils;
 
 import javax.servlet.http.HttpSession;
 

@@ -1,4 +1,4 @@
-package framework;
+package framework.etu2759.erreur;
 
 
 public class Erreur {
